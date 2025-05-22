@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Kingdom: Realms of BASIC & Pixels</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+        .font-press-start { font-family: 'Press Start 2P', cursive; }
+        .game-container {
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(12px);
+            border: 3px solid #fdbb2d;
+            box-shadow: 0 0 30px rgba(253, 187, 45, 0.65);
+        }
+        .btn-primary, .btn-quest, .btn-realm {
+            background-color: #fdbb2d; color: #1a2a6c;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+            border: none;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.1);
+        }
+        .btn-primary:hover, .btn-quest:hover, .btn-realm:hover {
+            background-color: #e09a1a;
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.35);
+        }
+        .btn-quest.active, .btn-realm.active {
+            background-color: #c78816; /* Darker active gold */
+            box-shadow: inset 0 3px 5px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.2) ;
+            transform: translateY(1px);
+        }
+        .btn-secondary {
+            background-color: #b21f1f; color: #f0f0f0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+            border: none;
+        }
+        .btn-secondary:hover {
+            background-color: #901a1a;
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.35);
+        }
+        .input-field, .select-field {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid #fdbb2d;
+            color: #f0f0f0;
+            border-radius: 0.375rem; /* rounded-md */
+        }
+        .input-field:focus, .select-field:focus {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: #e09a1a;
+            outline: none;
+            box-shadow: 0 0 12px rgba(253, 187, 45, 0.6);
+        }
+        .select-field {
+            padding: 0.75rem; /* Tailwind p-3 equivalent */
+            appearance: none; /* Remove default arrow */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23fdbb2d' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.5em 1.5em;
+        }
+
+        .code-line {
+            opacity: 0; transform: translateX(-20px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            min-height: 2.5rem; display: flex; align-items: center; padding: 0.25rem 0.5rem;
+        }
+        .code-line.visible { opacity: 1; transform: translateX(0); }
+        .code-line.highlight {
+            background-color: rgba(253, 187, 45, 0.3);
+            border-left: 4px solid #fdbb2d; padding-left: 12px;
+            border-top-right-radius: 4px; border-bottom-right-radius: 4px;
+        }
+        .variable-box {
+            border: 2px dashed #fdbb2d; padding: 0.75rem 1.25rem; margin: 0.5rem;
+            min-width: 110px; text-align: center; transition: all 0.5s ease;
+            position: relative; background-color: rgba(255,255,255,0.07); border-radius: 0.375rem;
+        }
+        .variable-box .name { font-size: 0.9rem; color: #ccc; margin-bottom: 0.25rem; }
+        .variable-box .value {
+            font-weight: bold; font-size: 1.25rem; color: #fdbb2d;
+            transition: opacity 0.5s ease; min-height: 1.5em;
+        }
+        .animated-number, .animated-text {
+            position: absolute; font-size: 1.5rem; font-weight: bold; color: #fdbb2d;
+            padding: 0.25rem 0.75rem; background-color: rgba(0,0,0,0.85);
+            border: 1px solid #fdbb2d; border-radius: 0.375rem;
+            z-index: 1000; transition: all 0.8s cubic-bezier(0.5, -0.55, 0.265, 1.55);
+            opacity: 0;
+        }
+        .result-display {
+            font-size: 1.75rem; font-weight: bold; color: #fdbb2d;
+            text-shadow: 0 0 10px #fdbb2d; opacity: 0; transform: scale(0.5);
+            transition: opacity 0.5s ease, transform 0.5s ease; margin-top: 1rem;
+            padding: 0.75rem; background-color: rgba(0,0,0,0.35); border-radius: 0.375rem;
+            width: 100%;
+        }
+        .result-display.visible { opacity: 1; transform: scale(1); }
+        .modal {
+            display: none; position: fixed; z-index: 1001; left: 0; top: 0;
+            width: 100%; height: 100%; overflow: auto;
+            background-color: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
+        }
+        .modal-content {
+            background-color: #172334; /* Slightly darker blue-gray */
+            margin: 10% auto; padding: 30px; border: 1px solid #fdbb2d;
+            width: 90%; max-width: 480px; border-radius: 10px;
+            text-align: center; box-shadow: 0 0 30px rgba(253, 187, 45, 0.55);
+        }
+        .modal-close-btn {
+            color: #aaa; float: right; font-size: 32px; font-weight: bold; line-height: 0.8;
+        }
+        .modal-close-btn:hover, .modal-close-btn:focus {
+            color: #fdbb2d; text-decoration: none; cursor: pointer;
+        }
+        .realm-content-area, .quest-content-area { display: none; }
+        .realm-content-area.active, .quest-content-area.active { display: block; }
+
+        .code-display-wrapper {
+            max-height: 300px; overflow-y: auto; background-color: rgba(0,0,0,0.25);
+            border-radius: 0.375rem; padding: 0.75rem; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .code-display-wrapper::-webkit-scrollbar { width: 10px; }
+        .code-display-wrapper::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 5px; }
+        .code-display-wrapper::-webkit-scrollbar-thumb { background: #fdbb2d; border-radius: 5px; }
+        .code-display-wrapper::-webkit-scrollbar-thumb:hover { background: #e09a1a; }
+
+        /* Pixel Grid for Pixel Painter */
+        .pixel-canvas-container {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr); /* 10x10 grid */
+            width: 200px; /* Adjust size as needed */
+            height: 200px;
+            border: 2px solid #fdbb2d;
+            margin: 1rem auto;
+            background-color: #333; /* Dark background for unpainted pixels */
+        }
+        .pixel-cell {
+            width: 100%;
+            height: 100%;
+            background-color: #444; /* Default pixel color */
+            border: 1px solid #555; /* Grid lines */
+            transition: background-color 0.3s ease;
+        }
+        .realm-divider {
+            border-top: 2px dashed #fdbb2d;
+            margin: 2rem 0;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 selection:bg-yellow-500 selection:text-black">
+
+    <div class="game-container w-full max-w-4xl p-6 md:p-8 rounded-xl shadow-2xl">
+        <header class="text-center mb-6">
+            <h1 class="font-press-start text-3xl md:text-4xl text-yellow-400 mb-2">Code Kingdom</h1>
+            <h2 id="realmTitle" class="text-2xl md:text-3xl font-semibold text-amber-300">Realms of Wonder</h2>
+        </header>
+
+        <section id="realmSelection" class="mb-6 text-center">
+            <h3 class="font-press-start text-xl text-amber-200 mb-4">Choose Your Realm:</h3>
+            <div class="flex flex-wrap gap-4 justify-center">
+                <button class="btn-realm font-semibold py-3 px-5 rounded-lg text-lg" data-realm="basic">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    BASIC Adventures
+                </button>
+                <button class="btn-realm font-semibold py-3 px-5 rounded-lg text-lg" data-realm="pixel">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                    Pixel Palace
+                </button>
+            </div>
+        </section>
+        
+        <div class="realm-divider"></div>
+
+        <div id="realmBasic" class="realm-content-area">
+            <header class="text-center mb-6">
+                <h2 id="questTitle_basic" class="text-xl md:text-2xl font-semibold text-amber-400">Choose a BASIC Quest</h2>
+                <p id="questDescription_basic" class="text-sm text-gray-300 mt-2">Master the ancient scrolls of BASIC programming!</p>
+            </header>
+            <section id="questSelection_basic" class="mb-8">
+                <div class="flex flex-wrap gap-3 sm:gap-4 justify-center">
+                    <button class="btn-quest font-semibold py-2 px-4 rounded-lg text-base" data-quest="adder">The Adder Oracle</button>
+                    <button class="btn-quest font-semibold py-2 px-4 rounded-lg text-base" data-quest="comparator">The Number Comparator</button>
+                    <button class="btn-quest font-semibold py-2 px-4 rounded-lg text-base" data-quest="looper">The Loop Master</button>
+                    <button class="btn-quest font-semibold py-2 px-4 rounded-lg text-base" data-quest="stringer">The Name Weaver</button>
+                </div>
+            </section>
+
+            <div id="questAdder" class="quest-content-area">
+                <section class="mb-6 flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-4 sm:space-y-0">
+                    <div class="flex-1">
+                        <label for="num1_adder" class="block text-sm font-medium text-gray-200 mb-1">First Number (num1):</label>
+                        <input type="text" id="num1_adder" class="input-field w-full p-3 text-lg" placeholder="e.g., 10">
+                    </div>
+                    <div class="flex-1">
+                        <label for="num2_adder" class="block text-sm font-medium text-gray-200 mb-1">Second Number (num2):</label>
+                        <input type="text" id="num2_adder" class="input-field w-full p-3 text-lg" placeholder="e.g., 25">
+                    </div>
+                </section>
+                <div class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 mb-8">
+                    <button id="calculateBtn_adder" class="btn-primary font-semibold py-3 px-6 rounded-lg text-lg w-full sm:w-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><path d="m12 14 4-4"></path><path d="M3.34 19a10 10 0 1 1 17.32 0"></path></svg>
+                        Calculate Sum
+                    </button>
+                    <button id="resetBtn_adder" class="btn-secondary font-semibold py-3 px-6 rounded-lg text-lg w-full sm:w-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                        Reset
+                    </button>
+                </div>
+                <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-900 p-4 rounded-lg shadow-inner border border-gray-700">
+                        <h3 class="font-press-start text-lg text-amber-300 mb-3">BASIC Program:</h3>
+                        <div class="code-display-wrapper">
+                            <pre class="text-sm leading-relaxed text-gray-300">
+                                <code id="codeLine1_adder" class="code-line block">10 REM Program to add two numbers</code>
+                                <code id="codeLine2_adder" class="code-line block">20 INPUT "Enter num1: ", num1</code>
+                                <code id="codeLine3_adder" class="code-line block">30 INPUT "Enter num2: ", num2</code>
+                                <code id="codeLine4_adder" class="code-line block">40 LET sum = num1 + num2</code>
+                                <code id="codeLine5_adder" class="code-line block">50 PRINT "The sum is: "; sum</code>
+                                <code id="codeLine6_adder" class="code-line block">60 END</code>
+                            </pre>
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded-lg shadow-inner border border-gray-600 flex flex-col items-center justify-start">
+                        <h3 class="font-press-start text-lg text-amber-300 mb-4">Execution & Variables:</h3>
+                        <div class="flex flex-wrap justify-center gap-2 mb-4">
+                            <div id="varNum1Box_adder" class="variable-box"><div class="name">num1</div><span class="value" id="varNum1Value_adder">?</span></div>
+                            <div id="varNum2Box_adder" class="variable-box"><div class="name">num2</div><span class="value" id="varNum2Value_adder">?</span></div>
+                            <div id="varSumBox_adder" class="variable-box bg-amber-500/20 border-amber-400"><div class="name">sum</div><span class="value" id="varSumValue_adder">?</span></div>
+                        </div>
+                        <div id="executionMessage_adder" class="text-center text-gray-300 h-12 mb-2 text-sm p-2 bg-black/20 rounded-md w-full">Waiting for input...</div>
+                        <div id="resultDisplay_adder" class="result-display"></div>
+                    </div>
+                </section>
+            </div>
+            <div id="questComparator" class="quest-content-area">
+                 <section class="mb-6 flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-4 sm:space-y-0">
+                    <div class="flex-1">
+                        <label for="numA_comparator" class="block text-sm font-medium text-gray-200 mb-1">First Number (A):</label>
+                        <input type="text" id="numA_comparator" class="input-field w-full p-3 text-lg" placeholder="e.g., 50">
+                    </div>
+                    <div class="flex-1">
+                        <label for="numB_comparator" class="block text-sm font-medium text-gray-200 mb-1">Second Number (B):</label>
+                        <input type="text" id="numB_comparator" class="input-field w-full p-3 text-lg" placeholder="e.g., 75">
+                    </div>
+                </section>
+                <div class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 mb-8">
+                    <button id="calculateBtn_comparator" class="btn-primary font-semibold py-3 px-6 rounded-lg text-lg w-full sm:w-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><line x1="12" y1="20" x2="12" y2="4"></line><polyline points="6 10 12 4 18 10"></polyline><polyline points="6 14 12 20 18 14"></polyline></svg>
+                        Compare Numbers
+                    </button>
+                    <button id="resetBtn_comparator" class="btn-secondary font-semibold py-3 px-6 rounded-lg text-lg w-full sm:w-auto">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                        Reset
+                    </button>
+                </div>
+                <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-900 p-4 rounded-lg shadow-inner border border-gray-700">
+                        <h3 class="font-press-start text-lg text-amber-300 mb-3">BASIC Program:</h3>
+                        <div class="code-display-wrapper">
+                            <pre class="text-sm leading-relaxed text-gray-300">
+                                <code id="codeLine1_comparator" class="code-line block">10 REM Program to compare two numbers</code>
+                                <code id="codeLine2_comparator" class="code-line block">20 INPUT "Enter first number: ", A</code>
+                                <code id="codeLine3_comparator" class="code-line block">30 INPUT "Enter second number: ", B</code>
+                                <code id="codeLine4_comparator" class="code-line block">40 IF A > B THEN PRINT A; " > "; B</code>
+                                <code id="codeLine5_comparator" class="code-line block">50 IF B > A THEN PRINT B; " > "; A</code>
+                                <code id="codeLine6_comparator" class="code-line block">60 IF A = B THEN PRINT A; " = "; B</code>
+                                <code id="codeLine7_comparator" class="code-line block">70 END</code>
+                            </pre>
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded-lg shadow-inner border border-gray-600 flex flex-col items-center justify-start">
+                        <h3 class="font-press-start text-lg text-amber-300 mb-4">Execution & Variables:</h3>
+                        <div class="flex flex-wrap justify-center gap-2 mb-4">
+                            <div id="varABox_comparator" class="variable-box"><div class="name">A</div><span class="value" id="varAValue_comparator">?</span></div>
+                            <div id="varBBox_comparator" class="variable-box"><div class="name">B</div><span class="value" id="varBValue_comparator">?</span></div>
+                        </div>
+                        <div id="executionMessage_comparator" class="text-center text-gray-300 h-12 mb-2 text-sm p-2 bg-black/20 rounded-md w-full">Waiting for input...</div>
+                        <div id="resultDisplay_comparator" class="result-display"></div>
+                    </div>
+                </section>
+            </div>
+            <div id="questLooper" class="quest-content-area">
+                <section class="mb-6 flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-4 sm:space-y-0">
+                    <div class="flex-1 max-w-xs mx-auto">
+                        <label for="limitN_looper" class="block text-sm font-medium text-gray-200 mb-1">Enter Loop Limit (N):</label>
+                        <input type="text" id="limitN_looper" class="input-field w-full p-3 text-lg" placeholder="e.g., 5">
+                    </div>
+                </section>
+                <div class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 mb-8">
+                    <button id="calculateBtn_looper" class="btn-primary font-semibold py-3 px-6 rounded-lg text-lg w-full sm:w-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path><path d="M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"></path><path d="M12 6V3"></path><path d="M12 21v-3"></path><path d="M6 12H3"></path><path d="M21 12h-3"></path></svg>
+                        Run Loop
+                    </button>
+                    <button id="resetBtn_looper" class="btn-secondary font-semibold py-3 px-6 rounded-lg text-lg w-full sm:w-auto">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                        Reset
+                    </button>
+                </div>
+                <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-900 p-4 rounded-lg shadow-inner border border-gray-700">
+                        <h3 class="font-press-start text-lg text-amber-300 mb-3">BASIC Program:</h3>
+                        <div class="code-display-wrapper">
+                            <pre class="text-sm leading-relaxed text-gray-300">
+                                <code id="codeLine1_looper" class="code-line block">10 REM Program to count up to N</code>
+                                <code id="codeLine2_looper" class="code-line block">20 INPUT "Enter limit: ", N</code>
+                                <code id="codeLine3_looper" class="code-line block">30 FOR I = 1 TO N</code>
+                                <code id="codeLine4_looper" class="code-line block">40 &nbsp;&nbsp;PRINT "Count: "; I</code>
+                                <code id="codeLine5_looper" class="code-line block">50 NEXT I</code>
+                                <code id="codeLine6_looper" class="code-line block">60 END</code>
+                            </pre>
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded-lg shadow-inner border border-gray-600 flex flex-col items-center justify-start">
+                        <h3 class="font-press-start text-lg text-amber-300 mb-4">Execution & Variables:</h3>
+                        <div class="flex flex-wrap justify-center gap-2 mb-4">
+                            <div id="varNBox_looper" class="variable-box"><div class="name">N</div><span class="value" id="varNValue_looper">?</span></div>
+                            <div id="varIBox_looper" class="variable-box bg-purple-500/20 border-purple-400"><div class="name">I (Counter)</div><span class="value" id="varIValue_looper">?</span></div>
+                        </div>
+                        <div id="executionMessage_looper" class="text-center text-gray-300 h-12 mb-2 text-sm p-2 bg-black/20 rounded-md w-full">Waiting for input...</div>
+                        <div id="resultDisplay_looper" class="result-display"></div>
+                    </div>
+                </section>
+            </div>
+            <div id="questStringer" class="quest-content-area">
+                <section class="mb-6 flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-4 sm:space-y-0">
+                    <div class="flex-1 max-w-md mx-auto">
+                        <label for="yourName_stringer" class="block text-sm font-medium text-gray-200 mb-1">Enter Your Name (YOURNAME$):</label>
+                        <input type="text" id="yourName_stringer" class="input-field w-full p-3 text-lg" placeholder="e.g., Alex">
+                    </div>
+                </section>
+                <div class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 mb-8">
+                    <button id="calculateBtn_stringer" class="btn-primary font-semibold py-3 px-6 rounded-lg text-lg w-full sm:w-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                        Weave Greeting
+                    </button>
+                    <button id="resetBtn_stringer" class="btn-secondary font-semibold py-3 px-6 rounded-lg text-lg w-full sm:w-auto">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                        Reset
+                    </button>
+                </div>
+                <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-900 p-4 rounded-lg shadow-inner border border-gray-700">
+                        <h3 class="font-press-start text-lg text-amber-300 mb-3">BASIC Program:</h3>
+                        <div class="code-display-wrapper">
+                            <pre class="text-sm leading-relaxed text-gray-300">
+                                <code id="codeLine1_stringer" class="code-line block">10 REM Program to greet the user</code>
+                                <code id="codeLine2_stringer" class="code-line block">20 INPUT "Enter your name: ", YOURNAME$</code>
+                                <code id="codeLine3_stringer" class="code-line block">30 PRINT "Hello, "; YOURNAME$</code>
+                                <code id="codeLine4_stringer" class="code-line block">40 PRINT "Welcome to the Code Kingdom!"</code>
+                                <code id="codeLine5_stringer" class="code-line block">50 END</code>
+                            </pre>
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded-lg shadow-inner border border-gray-600 flex flex-col items-center justify-start">
+                        <h3 class="font-press-start text-lg text-amber-300 mb-4">Execution & Variables:</h3>
+                        <div class="flex flex-wrap justify-center gap-2 mb-4">
+                            <div id="varYourNameBox_stringer" class="variable-box"><div class="name">YOURNAME$</div><span class="value" id="varYourNameValue_stringer">?</span></div>
+                        </div>
+                        <div id="executionMessage_stringer" class="text-center text-gray-300 h-12 mb-2 text-sm p-2 bg-black/20 rounded-md w-full">Waiting for input...</div>
+                        <div id="resultDisplay_stringer" class="result-display"></div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <div id="realmPixel" class="realm-content-area">
+            <header class="text-center mb-6">
+                <h2 id="questTitle_pixel" class="text-xl md:text-2xl font-semibold text-amber-400">Choose a Pixel Quest</h2>
+                <p id="questDescription_pixel" class="text-sm text-gray-300 mt-2">Explore the art of creation in the Pixel Palace!</p>
+            </header>
+            <section id="questSelection_pixel" class="mb-8">
+                <div class="flex flex-wrap gap-3 sm:gap-4 justify-center">
+                    <button class="btn-quest font-semibold py-2 px-4 rounded-lg text-base" data-quest="pixelpainter">The Pixel Painter</button>
+                </div>
+            </section>
+
+            <div id="questPixelpainter" class="quest-content-area">
+                <section class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                    <div>
+                        <label for="xCoord_pixelpainter" class="block text-sm font-medium text-gray-200 mb-1">X Coordinate (0-9):</label>
+                        <input type="text" id="xCoord_pixelpainter" class="input-field w-full p-3 text-lg" placeholder="e.g., 3">
+                    </div>
+                    <div>
+                        <label for="yCoord_pixelpainter" class="block text-sm font-medium text-gray-200 mb-1">Y Coordinate (0-9):</label>
+                        <input type="text" id="yCoord_pixelpainter" class="input-field w-full p-3 text-lg" placeholder="e.g., 5">
+                    </div>
+                    <div>
+                        <label for="color_pixelpainter" class="block text-sm font-medium text-gray-200 mb-1">Color:</label>
+                        <select id="color_pixelpainter" class="select-field w-full p-3 text-lg">
+                            <option value="RED" class="bg-gray-700 text-red-400">Red</option>
+                            <option value="GREEN" class="bg-gray-700 text-green-400">Green</option>
+                            <option value="BLUE" class="bg-gray-700 text-blue-400">Blue</option>
+                            <option value="YELLOW" class="bg-gray-700 text-yellow-400">Yellow</option>
+                            <option value="WHITE" class="bg-gray-700 text-white">White</option>
+                        </select>
+                    </div>
+                </section>
+                <div class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 mb-8">
+                    <button id="calculateBtn_pixelpainter" class="btn-primary font-semibold py-3 px-6 rounded-lg text-lg w-full sm:w-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                        Paint Pixel
+                    </button>
+                    <button id="resetBtn_pixelpainter" class="btn-secondary font-semibold py-3 px-6 rounded-lg text-lg w-full sm:w-auto">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                        Reset Canvas
+                    </button>
+                </div>
+                <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-900 p-4 rounded-lg shadow-inner border border-gray-700">
+                        <h3 class="font-press-start text-lg text-amber-300 mb-3">BASIC-like Program:</h3>
+                        <div class="code-display-wrapper">
+                            <pre class="text-sm leading-relaxed text-gray-300">
+                                <code id="codeLine1_pixelpainter" class="code-line block">10 REM Program to paint a pixel</code>
+                                <code id="codeLine2_pixelpainter" class="code-line block">20 INPUT "X (0-9): ", XCOORD</code>
+                                <code id="codeLine3_pixelpainter" class="code-line block">30 INPUT "Y (0-9): ", YCOORD</code>
+                                <code id="codeLine4_pixelpainter" class="code-line block">40 INPUT "Color: ", PIXELCOLOR$</code>
+                                <code id="codeLine5_pixelpainter" class="code-line block">50 PSET XCOORD, YCOORD, PIXELCOLOR$</code>
+                                <code id="codeLine6_pixelpainter" class="code-line block">60 PRINT "Painted pixel at "; XCOORD; ","; YCOORD</code>
+                                <code id="codeLine7_pixelpainter" class="code-line block">70 END</code>
+                            </pre>
+                        </div>
+                         <h3 class="font-press-start text-lg text-amber-300 mt-4 mb-2">Variables:</h3>
+                        <div class="flex flex-wrap justify-start gap-2">
+                            <div id="varXBox_pixelpainter" class="variable-box"><div class="name">XCOORD</div><span class="value" id="varXValue_pixelpainter">?</span></div>
+                            <div id="varYBox_pixelpainter" class="variable-box"><div class="name">YCOORD</div><span class="value" id="varYValue_pixelpainter">?</span></div>
+                            <div id="varColorBox_pixelpainter" class="variable-box"><div class="name">PIXELCOLOR$</div><span class="value" id="varColorValue_pixelpainter">?</span></div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded-lg shadow-inner border border-gray-600 flex flex-col items-center justify-start">
+                        <h3 class="font-press-start text-lg text-amber-300 mb-4">Digital Canvas (10x10):</h3>
+                        <div id="pixelCanvasContainer_pixelpainter" class="pixel-canvas-container">
+                            </div>
+                        <div id="executionMessage_pixelpainter" class="text-center text-gray-300 h-12 mt-4 mb-2 text-sm p-2 bg-black/20 rounded-md w-full">Waiting for input...</div>
+                        <div id="resultDisplay_pixelpainter" class="result-display"></div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="errorModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close-btn" id="modalCloseBtn">&times;</span>
+            <h3 class="font-press-start text-xl text-red-400 mb-4">Hold Up, Code Squire!</h3>
+            <p id="errorMessage" class="text-gray-200 text-base"></p>
+        </div>
+    </div>
+
+    <script>
+        // --- Global Elements & State ---
+        const realmTitleEl = document.getElementById('realmTitle');
+        const realmSelectionButtons = document.querySelectorAll('.btn-realm');
+        const realmContentAreas = document.querySelectorAll('.realm-content-area');
+        
+        const errorModal = document.getElementById('errorModal');
+        const errorMessageEl = document.getElementById('errorMessage'); // Renamed from errorMessage
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+        let currentRealm = 'basic'; // Default realm
+        let currentQuestId = ''; // Will be set when a quest is chosen
+        let currentAnimationTimeout;
+        let activeQuestObjects = {}; // Stores DOM elements for the currently active quest
+
+        // --- Quest Definitions ---
+        const questDetails = {
+            // BASIC Adventures Quests
+            adder: {
+                realm: 'basic',
+                title: "The Adder Oracle",
+                description: "Witness the ancient magic of BASIC to sum two numbers!",
+                elements: { /* ... existing elements ... */
+                    num1Input: 'num1_adder', num2Input: 'num2_adder', calculateBtn: 'calculateBtn_adder', resetBtn: 'resetBtn_adder',
+                    codeLines: ['codeLine1_adder', 'codeLine2_adder', 'codeLine3_adder', 'codeLine4_adder', 'codeLine5_adder', 'codeLine6_adder'],
+                    varNum1Value: 'varNum1Value_adder', varNum2Value: 'varNum2Value_adder', varSumValue: 'varSumValue_adder',
+                    varNum1Box: 'varNum1Box_adder', varNum2Box: 'varNum2Box_adder', varSumBox: 'varSumBox_adder',
+                    executionMessage: 'executionMessage_adder', resultDisplay: 'resultDisplay_adder'
+                },
+                initFunction: initAdder, calculateFunction: calculateSum_adder, resetFunction: resetAdder
+            },
+            comparator: {
+                realm: 'basic',
+                title: "The Number Comparator",
+                description: "Use IF...THEN statements to determine the greater number.",
+                elements: { /* ... existing elements ... */
+                    numAInput: 'numA_comparator', numBInput: 'numB_comparator', calculateBtn: 'calculateBtn_comparator', resetBtn: 'resetBtn_comparator',
+                    codeLines: ['codeLine1_comparator', 'codeLine2_comparator', 'codeLine3_comparator', 'codeLine4_comparator', 'codeLine5_comparator', 'codeLine6_comparator', 'codeLine7_comparator'],
+                    varAValue: 'varAValue_comparator', varBValue: 'varBValue_comparator', varABox: 'varABox_comparator', varBBox: 'varBBox_comparator',
+                    executionMessage: 'executionMessage_comparator', resultDisplay: 'resultDisplay_comparator'
+                },
+                initFunction: initComparator, calculateFunction: calculateComparison_comparator, resetFunction: resetComparator
+            },
+            looper: {
+                realm: 'basic',
+                title: "The Loop Master",
+                description: "Harness the power of FOR...NEXT loops to count.",
+                elements: { /* ... existing elements ... */
+                    limitNInput: 'limitN_looper', calculateBtn: 'calculateBtn_looper', resetBtn: 'resetBtn_looper',
+                    codeLines: ['codeLine1_looper', 'codeLine2_looper', 'codeLine3_looper', 'codeLine4_looper', 'codeLine5_looper', 'codeLine6_looper'],
+                    varNValue: 'varNValue_looper', varIValue: 'varIValue_looper', varNBox: 'varNBox_looper', varIBox: 'varIBox_looper',
+                    executionMessage: 'executionMessage_looper', resultDisplay: 'resultDisplay_looper'
+                },
+                initFunction: initLooper, calculateFunction: runLoop_looper, resetFunction: resetLooper
+            },
+            stringer: {
+                realm: 'basic',
+                title: "The Name Weaver",
+                description: "Use string variables to craft personalized greetings.",
+                elements: {
+                    yourNameInput: 'yourName_stringer', calculateBtn: 'calculateBtn_stringer', resetBtn: 'resetBtn_stringer',
+                    codeLines: ['codeLine1_stringer', 'codeLine2_stringer', 'codeLine3_stringer', 'codeLine4_stringer', 'codeLine5_stringer'],
+                    varYourNameValue: 'varYourNameValue_stringer', varYourNameBox: 'varYourNameBox_stringer',
+                    executionMessage: 'executionMessage_stringer', resultDisplay: 'resultDisplay_stringer'
+                },
+                initFunction: initStringer, calculateFunction: runGreeting_stringer, resetFunction: resetStringer
+            },
+            // Pixel Palace Quests
+            pixelpainter: {
+                realm: 'pixel',
+                title: "The Pixel Painter",
+                description: "Learn to paint individual pixels on a digital canvas.",
+                elements: {
+                    xCoordInput: 'xCoord_pixelpainter', yCoordInput: 'yCoord_pixelpainter', colorInput: 'color_pixelpainter',
+                    calculateBtn: 'calculateBtn_pixelpainter', resetBtn: 'resetBtn_pixelpainter',
+                    codeLines: ['codeLine1_pixelpainter', 'codeLine2_pixelpainter', 'codeLine3_pixelpainter', 'codeLine4_pixelpainter', 'codeLine5_pixelpainter', 'codeLine6_pixelpainter', 'codeLine7_pixelpainter'],
+                    varXValue: 'varXValue_pixelpainter', varYValue: 'varYValue_pixelpainter', varColorValue: 'varColorValue_pixelpainter',
+                    varXBox: 'varXBox_pixelpainter', varYBox: 'varYBox_pixelpainter', varColorBox: 'varColorBox_pixelpainter',
+                    pixelCanvasContainer: 'pixelCanvasContainer_pixelpainter',
+                    executionMessage: 'executionMessage_pixelpainter', resultDisplay: 'resultDisplay_pixelpainter'
+                },
+                initFunction: initPixelPainter, calculateFunction: paintPixel_pixelpainter, resetFunction: resetPixelPainter
+            }
+        };
+        
+        // --- Utility Functions ---
+        function getQuestElements(questId) { /* ... (same as before) ... */ 
+            const details = questDetails[questId];
+            if (!details) { console.error(`Quest details not found for ID: ${questId}`); return {}; }
+            const elements = {};
+            for (const key in details.elements) {
+                if (Array.isArray(details.elements[key])) {
+                    elements[key] = details.elements[key].map(id => document.getElementById(id));
+                } else {
+                    elements[key] = document.getElementById(details.elements[key]);
+                }
+            }
+            return elements;
+        }
+
+        function showErrorModal(message) { /* ... (same as before, ensure errorMessageEl is used) ... */ 
+            errorMessageEl.textContent = message;
+            errorModal.style.display = "block";
+        }
+        modalCloseBtn.onclick = function() { errorModal.style.display = "none"; }
+        window.onclick = function(event) {
+            if (event.target == errorModal) { errorModal.style.display = "none"; }
+        }
+
+        function highlightLine(index, questIdForHighlight) { /* ... (use questIdForHighlight) ... */ 
+            const { codeLines } = activeQuestObjects[questIdForHighlight || currentQuestId];
+            if (!codeLines) return;
+            codeLines.forEach((line, i) => {
+                if(line) {
+                    line.classList.toggle('highlight', i === index);
+                    if (i === index && line.scrollIntoView) {
+                        line.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }
+            });
+        }
+
+        async function displayCodeSequentially(questIdForDisplay) { /* ... (use questIdForDisplay) ... */ 
+            const { codeLines } = activeQuestObjects[questIdForDisplay || currentQuestId];
+            if (!codeLines) return;
+            for (let i = 0; i < codeLines.length; i++) {
+                await new Promise(resolve => {
+                    currentAnimationTimeout = setTimeout(() => {
+                        if(codeLines[i]) codeLines[i].classList.add('visible');
+                        resolve();
+                    }, i === 0 ? 0 : 200);
+                });
+            }
+        }
+        
+        function animateNumberToVariable(numberValue, targetVariableElement, sourceElement, questIdForAnim) { /* ... (same as before, use questIdForAnim if needed for context) ... */ 
+            if (!targetVariableElement || !sourceElement) {
+                console.error("Target or source element missing for animation.");
+                return Promise.resolve();
+            }
+            const animatedNum = document.createElement('div');
+            animatedNum.classList.add('animated-number');
+            animatedNum.textContent = numberValue;
+            document.body.appendChild(animatedNum);
+
+            const sourceRect = sourceElement.getBoundingClientRect();
+            const targetRect = targetVariableElement.getBoundingClientRect();
+            const scrollX = window.scrollX;
+            const scrollY = window.scrollY;
+
+            animatedNum.style.left = `${sourceRect.left + scrollX + sourceRect.width / 2 - animatedNum.offsetWidth / 2}px`;
+            animatedNum.style.top = `${sourceRect.top + scrollY + sourceRect.height / 2 - animatedNum.offsetHeight / 2}px`;
+            
+            return new Promise(resolve => {
+                requestAnimationFrame(() => {
+                    animatedNum.style.opacity = '1';
+                    animatedNum.style.transform = 'scale(1.2)';
+                    setTimeout(() => {
+                        animatedNum.style.left = `${targetRect.left + scrollX + targetRect.width / 2 - animatedNum.offsetWidth / 2}px`;
+                        animatedNum.style.top = `${targetRect.top + scrollY + targetRect.height / 2 - animatedNum.offsetHeight / 2}px`;
+                        animatedNum.style.transform = 'scale(0.8)';
+                    }, 50); 
+                });
+                setTimeout(() => {
+                    animatedNum.style.opacity = '0';
+                    setTimeout(() => animatedNum.remove(), 300); 
+                    resolve();
+                }, 850); 
+            });
+        }
+        
+        function animateTextToVariable(textValue, targetVariableElement, sourceElement, questIdForAnim) {
+            if (!targetVariableElement || !sourceElement) {
+                console.error("Target or source element missing for text animation.");
+                return Promise.resolve();
+            }
+            const animatedText = document.createElement('div');
+            animatedText.classList.add('animated-text'); // Could be same as animated-number or new style
+            animatedText.textContent = `"${textValue}"`; // Show quotes for strings
+            document.body.appendChild(animatedText);
+
+            const sourceRect = sourceElement.getBoundingClientRect();
+            const targetRect = targetVariableElement.getBoundingClientRect();
+            const scrollX = window.scrollX;
+            const scrollY = window.scrollY;
+
+            animatedText.style.left = `${sourceRect.left + scrollX + sourceRect.width / 2 - animatedText.offsetWidth / 2}px`;
+            animatedText.style.top = `${sourceRect.top + scrollY + sourceRect.height / 2 - animatedText.offsetHeight / 2}px`;
+            
+            return new Promise(resolve => {
+                requestAnimationFrame(() => {
+                    animatedText.style.opacity = '1';
+                    animatedText.style.transform = 'scale(1.1)'; // Slightly different scale for text
+                    setTimeout(() => {
+                        animatedText.style.left = `${targetRect.left + scrollX + targetRect.width / 2 - animatedText.offsetWidth / 2}px`;
+                        animatedText.style.top = `${targetRect.top + scrollY + targetRect.height / 2 - animatedText.offsetHeight / 2}px`;
+                        animatedText.style.transform = 'scale(0.9)';
+                    }, 50); 
+                });
+                setTimeout(() => {
+                    animatedText.style.opacity = '0';
+                    setTimeout(() => animatedText.remove(), 300); 
+                    resolve();
+                }, 850); 
+            });
+        }
+
+
+        function animateValueToBox(value, targetVariableElement, questIdForAnim) { /* ... (same as before, use questIdForAnim if needed) ... */ 
+            if (!targetVariableElement) return Promise.resolve();
+            const valueSpan = targetVariableElement.querySelector('.value');
+            if (!valueSpan) return Promise.resolve();
+            
+            const animatedNum = document.createElement('div');
+            animatedNum.classList.add('animated-number');
+            animatedNum.textContent = value;
+            document.body.appendChild(animatedNum);
+
+            const targetRect = targetVariableElement.getBoundingClientRect();
+            const scrollX = window.scrollX;
+            const scrollY = window.scrollY;
+
+            animatedNum.style.left = `${targetRect.left + scrollX + targetRect.width / 2 - animatedNum.offsetWidth / 2}px`;
+            animatedNum.style.top = `${targetRect.top + scrollY - 30 - animatedNum.offsetHeight / 2}px`; 
+
+            return new Promise(resolve => {
+                requestAnimationFrame(() => {
+                    animatedNum.style.opacity = '1';
+                    animatedNum.style.transform = 'scale(1.1)';
+                     setTimeout(() => {
+                        animatedNum.style.top = `${targetRect.top + scrollY + targetRect.height / 2 - animatedNum.offsetHeight / 2}px`;
+                        animatedNum.style.transform = 'scale(0.9)';
+                    }, 50);
+                });
+                setTimeout(() => {
+                    animatedNum.style.opacity = '0';
+                     setTimeout(() => animatedNum.remove(), 300);
+                    resolve();
+                }, 850);
+            });
+        }
+
+        // --- Quest Specific Functions ---
+        // Adder Oracle (mostly same as before)
+        function initAdder() { /* ... */ 
+            const qId = 'adder';
+            activeQuestObjects[qId] = getQuestElements(qId);
+            const { calculateBtn, resetBtn } = activeQuestObjects[qId];
+            if(calculateBtn) calculateBtn.addEventListener('click', () => calculateSum_adder(qId));
+            if(resetBtn) resetBtn.addEventListener('click', () => resetAdder(qId));
+            resetAdder(qId); // Initial call
+        }
+        function resetAdder(questId) { /* ... */
+            clearTimeout(currentAnimationTimeout);
+            const { num1Input, num2Input, varNum1Value, varNum2Value, varSumValue, codeLines, resultDisplay, executionMessage, calculateBtn } = activeQuestObjects[questId];
+            if(num1Input) num1Input.value = ''; if(num2Input) num2Input.value = '';
+            if(varNum1Value) varNum1Value.textContent = '?'; if(varNum2Value) varNum2Value.textContent = '?'; if(varSumValue) varSumValue.textContent = '?';
+            [varNum1Value, varNum2Value, varSumValue].forEach(el => { if(el) el.style.opacity = '1'; });
+            if(codeLines) codeLines.forEach(line => { if(line) line.classList.remove('visible', 'highlight'); });
+            if(resultDisplay) { resultDisplay.classList.remove('visible'); resultDisplay.textContent = ''; }
+            if(executionMessage) executionMessage.textContent = 'Waiting for input...';
+            if(calculateBtn) calculateBtn.disabled = false;
+            if(num1Input) num1Input.disabled = false; if(num2Input) num2Input.disabled = false;
+         }
+        async function calculateSum_adder(questId) { /* ... (same logic, ensure questId is passed to helpers) ... */
+            const { num1Input, num2Input, codeLines, varNum1Value, varNum2Value, varSumValue, varNum1Box, varNum2Box, varSumBox, executionMessage, resultDisplay, calculateBtn } = activeQuestObjects[questId];
+            const val1 = num1Input.value.trim(); const val2 = num2Input.value.trim();
+            if (val1 === '' || val2 === '') { showErrorModal('Please enter both numbers, O Mighty Adder!'); return; }
+            if (isNaN(val1) || isNaN(val2)) { showErrorModal('Only numeric spells (numbers) are allowed here!'); return; }
+            const num1 = parseFloat(val1); const num2 = parseFloat(val2);
+            calculateBtn.disabled = true; num1Input.disabled = true; num2Input.disabled = true;
+            resetAdder(questId); 
+            await displayCodeSequentially(questId);
+            await new Promise(r => { currentAnimationTimeout = setTimeout(() => { highlightLine(0, questId); executionMessage.textContent = '10 REM: A Remark or Comment. The Oracle ignores this line.'; r(); }, 500); });
+            await new Promise(r => { currentAnimationTimeout = setTimeout(async () => { highlightLine(1, questId); executionMessage.textContent = `20 INPUT: Oracle requests first number... (num1)`; await animateNumberToVariable(num1, varNum1Box, num1Input, questId); varNum1Value.textContent = num1; executionMessage.textContent = `Stored ${num1} in variable 'num1'. Variables hold data.`; r(); }, 1200); });
+            await new Promise(r => { currentAnimationTimeout = setTimeout(async () => { highlightLine(2, questId); executionMessage.textContent = `30 INPUT: Oracle requests second number... (num2)`; await animateNumberToVariable(num2, varNum2Box, num2Input, questId); varNum2Value.textContent = num2; executionMessage.textContent = `Stored ${num2} in variable 'num2'.`; r(); }, 1200); });
+            await new Promise(r => { currentAnimationTimeout = setTimeout(async () => { highlightLine(3, questId); executionMessage.textContent = `40 LET: Oracle calculates sum = ${num1} + ${num2}... The LET statement assigns a value.`; if(varNum1Value) varNum1Value.style.opacity = '0.3'; if(varNum2Value) varNum2Value.style.opacity = '0.3'; await new Promise(r_in => setTimeout(r_in, 400)); const sum = num1 + num2; if(varSumValue) {varSumValue.textContent = sum; varSumValue.style.opacity = '1';} if(varNum1Value) varNum1Value.style.opacity = '1'; if(varNum2Value) varNum2Value.style.opacity = '1'; executionMessage.textContent = `Calculated sum = ${sum}. Stored in variable 'sum'.`; r(); }, 1500); });
+            await new Promise(r => { currentAnimationTimeout = setTimeout(() => { highlightLine(4, questId); const sum = num1 + num2; executionMessage.textContent = `50 PRINT: Oracle reveals the sum... PRINT displays output.`; if(resultDisplay) {resultDisplay.textContent = `The Sum is: ${sum}`; resultDisplay.classList.add('visible');} r(); }, 1500); });
+            await new Promise(r => { currentAnimationTimeout = setTimeout(() => { highlightLine(5, questId); executionMessage.textContent = '60 END: The Oracle rests. Calculation complete! END stops the program.'; calculateBtn.disabled = false; num1Input.disabled = false; num2Input.disabled = false; r(); }, 1500); });
+        }
+
+        // Number Comparator (mostly same as before)
+        function initComparator() { /* ... */
+            const qId = 'comparator';
+            activeQuestObjects[qId] = getQuestElements(qId);
+            const { calculateBtn, resetBtn } = activeQuestObjects[qId];
+            if(calculateBtn) calculateBtn.addEventListener('click', () => calculateComparison_comparator(qId));
+            if(resetBtn) resetBtn.addEventListener('click', () => resetComparator(qId));
+            resetComparator(qId);
+         }
+        function resetComparator(questId) { /* ... */
+            clearTimeout(currentAnimationTimeout);
+            const { numAInput, numBInput, varAValue, varBValue, codeLines, resultDisplay, executionMessage, calculateBtn } = activeQuestObjects[questId];
+            if(numAInput) numAInput.value = ''; if(numBInput) numBInput.value = '';
+            if(varAValue) varAValue.textContent = '?'; if(varBValue) varBValue.textContent = '?';
+            [varAValue, varBValue].forEach(el => { if(el) el.style.opacity = '1'; });
+            if(codeLines) codeLines.forEach(line => { if(line) line.classList.remove('visible', 'highlight'); });
+            if(resultDisplay) { resultDisplay.classList.remove('visible'); resultDisplay.innerHTML = ''; }
+            if(executionMessage) executionMessage.textContent = 'Waiting for input...';
+            if(calculateBtn) calculateBtn.disabled = false;
+            if(numAInput) numAInput.disabled = false; if(numBInput) numBInput.disabled = false;
+        }
+        async function calculateComparison_comparator(questId) { /* ... (same logic, ensure questId is passed to helpers) ... */
+            const { numAInput, numBInput, codeLines, varAValue, varBValue, varABox, varBBox, executionMessage, resultDisplay, calculateBtn } = activeQuestObjects[questId];
+            const valA = numAInput.value.trim(); const valB = numBInput.value.trim();
+            if (valA === '' || valB === '') { showErrorModal('Please enter both numbers for comparison!'); return; }
+            if (isNaN(valA) || isNaN(valB)) { showErrorModal('Only numbers can be compared by this Oracle!'); return; }
+            const numA = parseFloat(valA); const numB = parseFloat(valB);
+            calculateBtn.disabled = true; numAInput.disabled = true; numBInput.disabled = true;
+            resetComparator(questId); 
+            if(resultDisplay) resultDisplay.innerHTML = '';
+            await displayCodeSequentially(questId);
+            await new Promise(r => setTimeout(() => { highlightLine(0, questId); executionMessage.textContent = '10 REM: This program compares two numbers.'; r(); }, 500));
+            await new Promise(r => setTimeout(async () => { highlightLine(1, questId); executionMessage.textContent = '20 INPUT: Oracle needs the first number (A)...'; await animateNumberToVariable(numA, varABox, numAInput, questId); if(varAValue) varAValue.textContent = numA; executionMessage.textContent = `Stored ${numA} in variable 'A'.`; r(); }, 1200));
+            await new Promise(r => setTimeout(async () => { highlightLine(2, questId); executionMessage.textContent = '30 INPUT: Oracle needs the second number (B)...'; await animateNumberToVariable(numB, varBBox, numBInput, questId); if(varBValue) varBValue.textContent = numB; executionMessage.textContent = `Stored ${numB} in variable 'B'.`; r(); }, 1200));
+            let conditionMet = false;
+            await new Promise(r => setTimeout(() => { highlightLine(3, questId); executionMessage.textContent = `40 IF A > B: Checking if ${numA} is greater than ${numB}...`; if (numA > numB) { executionMessage.textContent = `Condition ${numA} > ${numB} is TRUE. Oracle will PRINT.`; if(resultDisplay){resultDisplay.innerHTML += `${numA} is greater than ${numB}<br>`; resultDisplay.classList.add('visible');} conditionMet = true; } else { executionMessage.textContent = `Condition ${numA} > ${numB} is FALSE. Oracle skips to next check.`; } r(); }, 1500));
+            if (!conditionMet) { await new Promise(r => setTimeout(() => { highlightLine(4, questId); executionMessage.textContent = `50 IF B > A: Checking if ${numB} is greater than ${numA}...`; if (numB > numA) { executionMessage.textContent = `Condition ${numB} > ${numA} is TRUE. Oracle will PRINT.`; if(resultDisplay){resultDisplay.innerHTML += `${numB} is greater than ${numA}<br>`; resultDisplay.classList.add('visible');} conditionMet = true; } else { executionMessage.textContent = `Condition ${numB} > ${numA} is FALSE. Oracle skips to next check.`; } r(); }, 1500)); }
+            if (!conditionMet) { await new Promise(r => setTimeout(() => { highlightLine(5, questId); executionMessage.textContent = `60 IF A = B: Checking if ${numA} is equal to ${numB}...`; if (numA === numB) { executionMessage.textContent = `Condition ${numA} = ${numB} is TRUE. Oracle will PRINT.`; if(resultDisplay){resultDisplay.innerHTML += `${numA} is equal to ${numB}<br>`; resultDisplay.classList.add('visible');} } else { executionMessage.textContent = `Condition ${numA} = ${numB} is FALSE.`; } r(); }, 1500)); }
+            if (resultDisplay && resultDisplay.innerHTML === '') { resultDisplay.innerHTML = "Numbers were not compared as expected."; resultDisplay.classList.add('visible'); }
+            await new Promise(r => setTimeout(() => { highlightLine(6, questId); executionMessage.textContent = '70 END: Comparison complete. The Oracle rests.'; calculateBtn.disabled = false; numAInput.disabled = false; numBInput.disabled = false; r(); }, 1500));
+        }
+
+        // Loop Master (mostly same as before)
+        function initLooper() { /* ... */
+            const qId = 'looper';
+            activeQuestObjects[qId] = getQuestElements(qId);
+            const { calculateBtn, resetBtn } = activeQuestObjects[qId];
+            if(calculateBtn) calculateBtn.addEventListener('click', () => runLoop_looper(qId));
+            if(resetBtn) resetBtn.addEventListener('click', () => resetLooper(qId));
+            resetLooper(qId);
+         }
+        function resetLooper(questId) { /* ... */
+            clearTimeout(currentAnimationTimeout);
+            const { limitNInput, varNValue, varIValue, codeLines, resultDisplay, executionMessage, calculateBtn } = activeQuestObjects[questId];
+            if(limitNInput) limitNInput.value = '';
+            if(varNValue) varNValue.textContent = '?'; if(varIValue) varIValue.textContent = '?';
+            [varNValue, varIValue].forEach(el => { if(el) el.style.opacity = '1'; });
+            if(codeLines) codeLines.forEach(line => { if(line) line.classList.remove('visible', 'highlight'); });
+            if(resultDisplay) { resultDisplay.classList.remove('visible'); resultDisplay.innerHTML = ''; }
+            if(executionMessage) executionMessage.textContent = 'Waiting for input...';
+            if(calculateBtn) calculateBtn.disabled = false;
+            if(limitNInput) limitNInput.disabled = false;
+        }
+        async function runLoop_looper(questId) { /* ... (same logic, ensure questId is passed to helpers) ... */
+            const { limitNInput, codeLines, varNValue, varIValue, varNBox, varIBox, executionMessage, resultDisplay, calculateBtn } = activeQuestObjects[questId];
+            const valN = limitNInput.value.trim();
+            if (valN === '') { showErrorModal('Please enter the loop limit (N)!'); return; }
+            if (isNaN(valN) || parseInt(valN) <= 0 || parseInt(valN) > 20) { showErrorModal('Limit must be a positive number (1-20).'); return; }
+            const limitN = parseInt(valN);
+            calculateBtn.disabled = true; limitNInput.disabled = true;
+            resetLooper(questId);
+            if(resultDisplay) resultDisplay.innerHTML = '';
+            await displayCodeSequentially(questId);
+            await new Promise(r => setTimeout(() => { highlightLine(0, questId); executionMessage.textContent = '10 REM: This program counts using a FOR...NEXT loop.'; r(); }, 500));
+            await new Promise(r => setTimeout(async () => { highlightLine(1, questId); executionMessage.textContent = '20 INPUT: Oracle needs the loop limit (N)...'; await animateNumberToVariable(limitN, varNBox, limitNInput, questId); if(varNValue) varNValue.textContent = limitN; executionMessage.textContent = `Stored ${limitN} in variable 'N'.`; r(); }, 1200));
+            await new Promise(r => setTimeout(() => { highlightLine(2, questId); executionMessage.textContent = `30 FOR I = 1 TO ${limitN}: Oracle begins the loop. 'I' starts at 1.`; r(); }, 1200));
+            for (let i = 1; i <= limitN; i++) {
+                await new Promise(r => setTimeout(async () => { if (i > 1) { highlightLine(4, questId); executionMessage.textContent = `50 NEXT I: Oracle increments 'I' and checks condition.`; await new Promise(r_in => setTimeout(r_in, 700)); } highlightLine(2, questId); await animateValueToBox(i, varIBox, questId); if(varIValue) varIValue.textContent = i; executionMessage.textContent = `Loop iteration: 'I' is now ${i}.`; r(); }, i === 1 ? 500 : 1000));
+                await new Promise(r => setTimeout(() => { highlightLine(3, questId); executionMessage.textContent = `40 PRINT: Oracle displays the current count...`; if(resultDisplay) {resultDisplay.innerHTML += `Count: ${i}<br>`; resultDisplay.classList.add('visible');} r(); }, 1000));
+            }
+            await new Promise(r => setTimeout(() => { highlightLine(4, questId); executionMessage.textContent = `50 NEXT I: Loop condition I > ${limitN} is met. Oracle exits loop.`; r(); }, 1000));
+            await new Promise(r => setTimeout(() => { highlightLine(5, questId); executionMessage.textContent = '60 END: Loop finished. The Oracle rests.'; calculateBtn.disabled = false; limitNInput.disabled = false; r(); }, 1500));
+        }
+
+        // Name Weaver (Stringer) Quest - NEW
+        function initStringer() {
+            const qId = 'stringer';
+            activeQuestObjects[qId] = getQuestElements(qId);
+            const { calculateBtn, resetBtn } = activeQuestObjects[qId];
+            if(calculateBtn) calculateBtn.addEventListener('click', () => runGreeting_stringer(qId));
+            if(resetBtn) resetBtn.addEventListener('click', () => resetStringer(qId));
+            resetStringer(qId);
+        }
+        function resetStringer(questId) {
+            clearTimeout(currentAnimationTimeout);
+            const { yourNameInput, varYourNameValue, codeLines, resultDisplay, executionMessage, calculateBtn } = activeQuestObjects[questId];
+            if(yourNameInput) yourNameInput.value = '';
+            if(varYourNameValue) varYourNameValue.textContent = '?';
+            if(varYourNameValue) varYourNameValue.style.opacity = '1';
+            if(codeLines) codeLines.forEach(line => { if(line) line.classList.remove('visible', 'highlight'); });
+            if(resultDisplay) { resultDisplay.classList.remove('visible'); resultDisplay.innerHTML = ''; }
+            if(executionMessage) executionMessage.textContent = 'Waiting for input...';
+            if(calculateBtn) calculateBtn.disabled = false;
+            if(yourNameInput) yourNameInput.disabled = false;
+        }
+        async function runGreeting_stringer(questId) {
+            const { yourNameInput, codeLines, varYourNameValue, varYourNameBox, executionMessage, resultDisplay, calculateBtn } = activeQuestObjects[questId];
+            const nameVal = yourNameInput.value.trim();
+            if (nameVal === '') { showErrorModal('Please weave your name into the scroll!'); return; }
+            
+            calculateBtn.disabled = true; yourNameInput.disabled = true;
+            resetStringer(questId);
+            if(resultDisplay) resultDisplay.innerHTML = '';
+
+            await displayCodeSequentially(questId);
+
+            await new Promise(r => setTimeout(() => { highlightLine(0, questId); executionMessage.textContent = '10 REM: A program to greet the user by name.'; r(); }, 500));
+            
+            await new Promise(r => setTimeout(async () => { 
+                highlightLine(1, questId); executionMessage.textContent = '20 INPUT: Oracle requests your name for YOURNAME$...';
+                await animateTextToVariable(nameVal, varYourNameBox, yourNameInput, questId);
+                if(varYourNameValue) varYourNameValue.textContent = `"${nameVal}"`; // Show strings with quotes
+                executionMessage.textContent = `Stored "${nameVal}" in string variable YOURNAME$. (Note the $ for strings!)`;
+                r(); 
+            }, 1200));
+
+            await new Promise(r => setTimeout(() => {
+                highlightLine(2, questId); 
+                executionMessage.textContent = `30 PRINT: Oracle crafts a greeting with your name...`;
+                if(resultDisplay) { resultDisplay.innerHTML += `Hello, ${nameVal}<br>`; resultDisplay.classList.add('visible'); }
+                r();
+            }, 1500));
+            
+            await new Promise(r => setTimeout(() => {
+                highlightLine(3, questId); 
+                executionMessage.textContent = `40 PRINT: Oracle extends a warm welcome...`;
+                if(resultDisplay) { resultDisplay.innerHTML += `Welcome to the Code Kingdom!`; resultDisplay.classList.add('visible'); }
+                r();
+            }, 1500));
+
+            await new Promise(r => setTimeout(() => {
+                highlightLine(4, questId); executionMessage.textContent = '50 END: The greeting is complete.';
+                calculateBtn.disabled = false; yourNameInput.disabled = false;
+                r();
+            }, 1500));
+        }
+
+        // Pixel Painter Quest - NEW
+        const PIXEL_GRID_SIZE = 10;
+        function initPixelPainter() {
+            const qId = 'pixelpainter';
+            activeQuestObjects[qId] = getQuestElements(qId);
+            const { calculateBtn, resetBtn, pixelCanvasContainer } = activeQuestObjects[qId];
+            
+            if (pixelCanvasContainer) { // Generate pixel grid
+                pixelCanvasContainer.innerHTML = ''; // Clear previous grid
+                for (let r = 0; r < PIXEL_GRID_SIZE; r++) {
+                    for (let c = 0; c < PIXEL_GRID_SIZE; c++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('pixel-cell');
+                        cell.id = `pixel-${r}-${c}`;
+                        pixelCanvasContainer.appendChild(cell);
+                    }
+                }
+            }
+            if(calculateBtn) calculateBtn.addEventListener('click', () => paintPixel_pixelpainter(qId));
+            if(resetBtn) resetBtn.addEventListener('click', () => resetPixelPainter(qId));
+            resetPixelPainter(qId); // Initial call
+        }
+
+        function resetPixelPainter(questId) {
+            clearTimeout(currentAnimationTimeout);
+            const { xCoordInput, yCoordInput, colorInput, varXValue, varYValue, varColorValue, codeLines, resultDisplay, executionMessage, calculateBtn, pixelCanvasContainer } = activeQuestObjects[questId];
+
+            if(xCoordInput) xCoordInput.value = '';
+            if(yCoordInput) yCoordInput.value = '';
+            if(colorInput) colorInput.value = 'RED'; // Default color
+            if(varXValue) varXValue.textContent = '?';
+            if(varYValue) varYValue.textContent = '?';
+            if(varColorValue) varColorValue.textContent = '?';
+            [varXValue, varYValue, varColorValue].forEach(el => { if(el) el.style.opacity = '1'; });
+
+            if(codeLines) codeLines.forEach(line => { if(line) line.classList.remove('visible', 'highlight'); });
+            if(resultDisplay) { resultDisplay.classList.remove('visible'); resultDisplay.innerHTML = ''; }
+            if(executionMessage) executionMessage.textContent = 'Waiting for input...';
+            if(calculateBtn) calculateBtn.disabled = false;
+            [xCoordInput, yCoordInput, colorInput].forEach(el => { if(el) el.disabled = false; });
+
+            // Reset all pixel cells to default color
+            if (pixelCanvasContainer) {
+                const cells = pixelCanvasContainer.querySelectorAll('.pixel-cell');
+                cells.forEach(cell => cell.style.backgroundColor = '#444');
+            }
+        }
+
+        async function paintPixel_pixelpainter(questId) {
+            const { xCoordInput, yCoordInput, colorInput, codeLines, varXValue, varYValue, varColorValue, varXBox, varYBox, varColorBox, executionMessage, resultDisplay, calculateBtn, pixelCanvasContainer } = activeQuestObjects[questId];
+
+            const xVal = xCoordInput.value.trim();
+            const yVal = yCoordInput.value.trim();
+            const colorVal = colorInput.value;
+
+            if (xVal === '' || yVal === '') { showErrorModal('Please enter X and Y coordinates!'); return; }
+            if (isNaN(xVal) || isNaN(yVal)) { showErrorModal('Coordinates must be numbers!'); return; }
+            const x = parseInt(xVal);
+            const y = parseInt(yVal);
+            if (x < 0 || x >= PIXEL_GRID_SIZE || y < 0 || y >= PIXEL_GRID_SIZE) {
+                showErrorModal(`Coordinates must be between 0 and ${PIXEL_GRID_SIZE - 1}!`); return;
+            }
+
+            calculateBtn.disabled = true;
+            [xCoordInput, yCoordInput, colorInput].forEach(el => el.disabled = true);
+            // Don't fully reset canvas on each paint, just clear messages and highlights
+            if(codeLines) codeLines.forEach(line => { if(line) line.classList.remove('visible', 'highlight'); });
+            if(resultDisplay) { resultDisplay.classList.remove('visible'); resultDisplay.innerHTML = ''; }
+            if(varXValue) varXValue.textContent = '?'; if(varYValue) varYValue.textContent = '?'; if(varColorValue) varColorValue.textContent = '?';
+
+
+            await displayCodeSequentially(questId);
+
+            await new Promise(r => setTimeout(() => { highlightLine(0, questId); executionMessage.textContent = '10 REM: Program to paint a pixel on the canvas.'; r(); }, 500));
+            
+            await new Promise(r => setTimeout(async () => { 
+                highlightLine(1, questId); executionMessage.textContent = '20 INPUT: Oracle needs X coordinate...';
+                await animateNumberToVariable(x, varXBox, xCoordInput, questId);
+                if(varXValue) varXValue.textContent = x;
+                executionMessage.textContent = `Stored ${x} in XCOORD.`; r(); 
+            }, 1200));
+            
+            await new Promise(r => setTimeout(async () => { 
+                highlightLine(2, questId); executionMessage.textContent = '30 INPUT: Oracle needs Y coordinate...';
+                await animateNumberToVariable(y, varYBox, yCoordInput, questId);
+                if(varYValue) varYValue.textContent = y;
+                executionMessage.textContent = `Stored ${y} in YCOORD.`; r(); 
+            }, 1200));
+
+            await new Promise(r => setTimeout(async () => { 
+                highlightLine(3, questId); executionMessage.textContent = '40 INPUT: Oracle needs the color...';
+                // For select, we can just show it moving to the variable conceptually
+                await animateTextToVariable(colorVal, varColorBox, colorInput, questId);
+                if(varColorValue) varColorValue.textContent = `"${colorVal}"`;
+                executionMessage.textContent = `Selected "${colorVal}" for PIXELCOLOR$.`; r(); 
+            }, 1200));
+
+            await new Promise(r => setTimeout(() => {
+                highlightLine(4, questId); 
+                executionMessage.textContent = `50 PSET: Oracle paints pixel at (${x},${y}) with ${colorVal}!`;
+                const pixelCell = document.getElementById(`pixel-${y}-${x}`); // Note: Grid is often (row, col) -> (y,x)
+                if (pixelCell) {
+                    pixelCell.style.backgroundColor = colorVal.toLowerCase();
+                }
+                r();
+            }, 1500));
+
+            await new Promise(r => setTimeout(() => {
+                highlightLine(5, questId); 
+                executionMessage.textContent = `60 PRINT: Confirming the masterpiece...`;
+                if(resultDisplay) { resultDisplay.innerHTML = `Painted pixel at (${x},${y}) with ${colorVal}.`; resultDisplay.classList.add('visible'); }
+                r();
+            }, 1500));
+
+            await new Promise(r => setTimeout(() => {
+                highlightLine(6, questId); executionMessage.textContent = '70 END: Pixel painted. The canvas awaits more art!';
+                calculateBtn.disabled = false; 
+                [xCoordInput, yCoordInput, colorInput].forEach(el => el.disabled = false);
+                r();
+            }, 1500));
+        }
+
+
+        // --- Realm & Quest Switching Logic ---
+        function setActiveRealm(realmId) {
+            currentRealm = realmId;
+            realmTitleEl.textContent = realmId === 'basic' ? "BASIC Adventures" : "Pixel Palace";
+
+            realmSelectionButtons.forEach(button => {
+                button.classList.toggle('active', button.dataset.realm === realmId);
+            });
+            realmContentAreas.forEach(area => {
+                area.classList.toggle('active', area.id === `realm${realmId.charAt(0).toUpperCase() + realmId.slice(1)}`);
+            });
+            
+            // Deactivate all quests from other realms and hide their content
+            document.querySelectorAll('.quest-content-area').forEach(qa => qa.classList.remove('active'));
+            document.querySelectorAll(`#realm${realmId.charAt(0).toUpperCase() + realmId.slice(1)} .btn-quest`).forEach(qb => qb.classList.remove('active'));
+
+
+            // Set default quest for the new realm or re-initialize if needed
+            const realmQuestButtons = document.querySelectorAll(`#realm${realmId.charAt(0).toUpperCase() + realmId.slice(1)} .btn-quest`);
+            if (realmQuestButtons.length > 0) {
+                // Automatically select and initialize the first quest of the newly selected realm
+                const firstQuestIdOfRealm = realmQuestButtons[0].dataset.quest;
+                setActiveQuest(firstQuestIdOfRealm, realmId);
+            } else {
+                // If no quests in this realm yet, clear titles or set a default message
+                const questTitleEl = document.getElementById(`questTitle_${realmId}`);
+                const questDescriptionEl = document.getElementById(`questDescription_${realmId}`);
+                if(questTitleEl) questTitleEl.textContent = `Welcome to the ${realmTitleEl.textContent}`;
+                if(questDescriptionEl) questDescriptionEl.textContent = "More quests coming soon!";
+            }
+        }
+
+        function setActiveQuest(questId, realmIdOfQuest) {
+            currentQuestId = questId; // Set global current quest
+            const questConfig = questDetails[questId];
+
+            if (!questConfig || questConfig.realm !== currentRealm) {
+                console.warn(`Quest ${questId} not found or does not belong to current realm ${currentRealm}.`);
+                // Optionally hide all quest content if a quest from another realm was somehow targeted
+                document.querySelectorAll('.quest-content-area').forEach(area => area.classList.remove('active'));
+                return;
+            }
+            
+            // Update quest titles and descriptions for the current realm
+            const questTitleEl = document.getElementById(`questTitle_${currentRealm}`);
+            const questDescriptionEl = document.getElementById(`questDescription_${currentRealm}`);
+            if(questTitleEl) questTitleEl.textContent = questConfig.title;
+            if(questDescriptionEl) questDescriptionEl.textContent = questConfig.description;
+
+            // Update quest button active states within the current realm
+            document.querySelectorAll(`#realm${currentRealm.charAt(0).toUpperCase() + currentRealm.slice(1)} .btn-quest`).forEach(button => {
+                button.classList.toggle('active', button.dataset.quest === questId);
+            });
+
+            // Show/hide quest content areas
+            document.querySelectorAll('.quest-content-area').forEach(area => {
+                 area.classList.toggle('active', area.id === `quest${questId.charAt(0).toUpperCase() + questId.slice(1)}`);
+            });
+            
+            if (typeof questConfig.initFunction === 'function') {
+                questConfig.initFunction();
+            } else {
+                console.error("Initialization function not found for quest:", questId);
+            }
+        }
+
+        realmSelectionButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                setActiveRealm(button.dataset.realm);
+            });
+        });
+
+        document.querySelectorAll('.btn-quest').forEach(button => {
+            button.addEventListener('click', () => {
+                const questId = button.dataset.quest;
+                // Ensure the realm of the quest is active before setting the quest
+                const realmOfQuest = questDetails[questId]?.realm;
+                if (realmOfQuest && realmOfQuest === currentRealm) {
+                    setActiveQuest(questId, currentRealm);
+                } else if (realmOfQuest) {
+                    // If quest belongs to another realm, switch to that realm first
+                    setActiveRealm(realmOfQuest); 
+                    // setActiveRealm will then call setActiveQuest for the default/first quest of that realm.
+                    // If we want to specifically target *this* quest after realm switch:
+                    // setActiveQuest(questId, realmOfQuest); // This might need a slight re-think if setActiveRealm also sets a default.
+                    // For now, let's assume setActiveRealm's default quest selection is fine, or adjust if specific cross-realm quest linking is needed.
+                }
+            });
+        });
+
+        // --- Initial Setup ---
+        setActiveRealm('basic'); // Start with the BASIC Adventures realm
+        // setActiveQuest will be called by setActiveRealm for the first quest in BASIC.
+
+    </script>
+</body>
+</html>
